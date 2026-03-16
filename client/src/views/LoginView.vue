@@ -22,7 +22,7 @@ const errors = reactive({
 })
 
 // Mock credentials (replace with real API later)
-const MOCK_USER = { username: 'admin', password: 'admin123', name: 'Admin User' }
+const MOCK_USER = { username: 'admin', password: import.meta.env.VITE_APP_PASSWORD, name: 'Admin User' }
 
 function validate() {
   let valid = true
