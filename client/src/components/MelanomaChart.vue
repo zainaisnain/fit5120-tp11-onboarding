@@ -152,10 +152,10 @@ watch([activeType, activeSex], draw)
     <div class="mb-4">
       <h2 class="text-base font-semibold text-gray-900 flex items-center gap-2">
         <span class="w-3 h-3 rounded-full bg-orange-500 inline-block"></span>
-        Melanoma of the Skin — Rates Over Time
+        Melanoma of the Skin — Rates in Young Australians (Ages 15–29)
       </h2>
       <p class="text-xs text-gray-400 mt-0.5">
-        Age-standardised rates per 100,000 population · Australia · 2001 ASP
+        Average age-specific rate per 100,000 population across ages 15–19, 20–24, 25–29 · Australia
       </p>
     </div>
 
