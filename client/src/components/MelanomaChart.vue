@@ -5,7 +5,6 @@ import * as d3 from 'd3'
 const svgRef     = ref(null)
 const data       = ref(null)
 const activeType = ref('both')
-const activeSex  = ref('Persons')
 const tooltip    = ref({ visible: false, x: 0, y: 0, html: '' })
 
 const typeOptions = [
@@ -13,7 +12,8 @@ const typeOptions = [
   { value: 'mortality', label: 'Mortality' },
   { value: 'both',      label: 'Both' },
 ]
-const sexOptions = ['Persons', 'Males', 'Females']
+
+const SEX = 'Persons'
 
 const COLORS = { incidence: '#f97316', mortality: '#6366f1' }
 
@@ -36,7 +36,7 @@ function draw() {
   const svg = d3.select(svgRef.value).attr('width', W).attr('height', H)
   const g   = svg.append('g').attr('transform', `translate(${m.left},${m.top})`)
 
-  const sex = activeSex.value
+  const sex = SEX
   const series = []
   if (activeType.value !== 'mortality') series.push({ key: 'incidence', rows: data.value.incidence, color: COLORS.incidence })
   if (activeType.value !== 'incidence') series.push({ key: 'mortality', rows: data.value.mortality, color: COLORS.mortality })
@@ -144,7 +144,7 @@ onMounted(async () => {
 
 onUnmounted(() => window.removeEventListener('resize', draw))
 
-watch([activeType, activeSex], draw)
+watch(activeType, draw)
 </script>
 
 <template>
@@ -168,14 +168,6 @@ watch([activeType, activeSex], draw)
           :class="['px-3 py-1 text-xs font-medium rounded transition',
             activeType === opt.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700']"
         >{{ opt.label }}</button>
-      </div>
-      <div class="flex items-center gap-1 bg-gray-100 p-1 rounded">
-        <button
-          v-for="sex in sexOptions" :key="sex"
-          @click="activeSex = sex"
-          :class="['px-3 py-1 text-xs font-medium rounded transition',
-            activeSex === sex ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700']"
-        >{{ sex }}</button>
       </div>
     </div>
 

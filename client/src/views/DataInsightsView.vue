@@ -51,7 +51,6 @@ import UVHeatTrendChart from '@/components/UVHeatTrendChart.vue'
           <span class="font-medium text-gray-500">Incidence</span>,
           <span class="font-medium text-gray-500">Mortality</span>, and
           <span class="font-medium text-gray-500">Both</span> to see how the gap has grown over time.
-          Switch between sex groups to compare trends.
         </p>
       </section>
 
