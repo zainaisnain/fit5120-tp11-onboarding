@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import axios from 'axios'
+import * as echarts from 'echarts'
 
 // pageState tracks the current UI state and can be idle, locating, loading, success, or error
 const pageState = ref('idle')
@@ -9,6 +10,22 @@ const coords = ref(null)
 const locationName = ref('')
 const uvIndex = ref(null)
 const updatedAt = ref('')
+const todayLabel = ref('')
+
+// This array defines the color legend entries for the UV index chart
+const uvBands = [
+  { label: 'Low (0–2)', color: 'bg-green-500' },
+  { label: 'Moderate (3–5)', color: 'bg-yellow-400' },
+  { label: 'High (6–7)', color: 'bg-orange-500' },
+  { label: 'Very High (8–10)', color: 'bg-red-500' },
+  { label: 'Extreme (11+)', color: 'bg-purple-600' },
+]
+
+// These refs hold the DOM elements and ECharts instances for both charts
+const uvChartRef = ref(null)
+const tempChartRef = ref(null)
+let uvChart = null
+let tempChart = null
 
 // This function returns the color, gradient, and safety tip configuration for a given UV index value
 function getUVConfig(uv) {
@@ -120,7 +137,7 @@ async function requestLocation() {
   )
 }
 
-// This function fetches the UV index from Open-Meteo and resolves the location name using Nominatim
+// This function fetches the UV index and hourly data from Open-Meteo and resolves the location name using Nominatim
 async function fetchUVData() {
   pageState.value = 'loading'
   try {
@@ -128,7 +145,13 @@ async function fetchUVData() {
     const lng = coords.value.lng
 
     const uvRes = await axios.get('https://api.open-meteo.com/v1/forecast', {
-      params: { latitude: lat, longitude: lng, current: 'uv_index', timezone: 'auto' },
+      params: {
+        latitude: lat, longitude: lng,
+        current: 'uv_index',
+        hourly: 'uv_index,temperature_2m',
+        timezone: 'auto',
+        forecast_days: 1,
+      },
     })
     const geoRes = await axios.get('https://nominatim.openstreetmap.org/reverse', {
       params: { lat, lon: lng, format: 'json' },
@@ -154,15 +177,135 @@ async function fetchUVData() {
     }
 
     updatedAt.value = new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })
+
+    // This block processes hourly data to build chart labels and today's date label
+    const hourly = uvRes.data.hourly
+    const times = hourly.time
+    const labels = []
+    for (let i = 0; i < times.length; i++) {
+      const h = parseInt(times[i].split('T')[1].split(':')[0])
+      if (h === 0) labels.push('12am')
+      else if (h < 12) labels.push(h + 'am')
+      else if (h === 12) labels.push('12pm')
+      else labels.push((h - 12) + 'pm')
+    }
+    const d = new Date(times[0])
+    todayLabel.value = d.toLocaleDateString('en-AU', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    })
+
     pageState.value = 'success'
+
+    // nextTick waits for the DOM to update before initializing the charts
+    await nextTick()
+    initUVChart(labels, hourly.uv_index)
+    initTempChart(labels, hourly.temperature_2m)
   } catch (e) {
     pageState.value = 'error'
     errorMessage.value = 'Failed to fetch UV data. Please check your connection and try again.'
   }
 }
 
+// This function initializes the UV index ECharts line chart with color zones and tooltip
+function initUVChart(labels, data) {
+  if (uvChart) uvChart.dispose()
+  uvChart = echarts.init(uvChartRef.value)
+  uvChart.setOption({
+    tooltip: {
+      trigger: 'axis',
+      formatter: function (params) {
+        const p = params[0]
+        return '<b>' + p.name + '</b><br/>UV Index: <b>' + p.value + '</b>'
+      },
+    },
+    grid: { left: 40, right: 20, top: 20, bottom: 40 },
+    xAxis: {
+      type: 'category', data: labels,
+      axisLabel: { color: '#6b7280', fontSize: 11 },
+      axisLine: { lineStyle: { color: '#e5e7eb' } },
+    },
+    yAxis: {
+      type: 'value', name: 'UV Index',
+      nameTextStyle: { color: '#6b7280', fontSize: 11 },
+      splitLine: { lineStyle: { color: '#f3f4f6' } },
+      axisLabel: { color: '#6b7280', fontSize: 11 },
+    },
+    series: [{
+      name: 'UV Index', type: 'line', data, smooth: true, symbol: 'none',
+      lineStyle: { color: '#f97316', width: 2.5 },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: 'rgba(249,115,22,0.35)' },
+          { offset: 1, color: 'rgba(249,115,22,0.02)' },
+        ]),
+      },
+      markArea: {
+        silent: true, itemStyle: { opacity: 0.06 },
+        data: [
+          [{ yAxis: 3 }, { yAxis: 6, itemStyle: { color: '#facc15' } }],
+          [{ yAxis: 6 }, { yAxis: 8, itemStyle: { color: '#f97316' } }],
+          [{ yAxis: 8 }, { yAxis: 999, itemStyle: { color: '#ef4444' } }],
+        ],
+      },
+    }],
+  })
+}
+
+// This function initializes the temperature ECharts line chart
+function initTempChart(labels, data) {
+  if (tempChart) tempChart.dispose()
+  tempChart = echarts.init(tempChartRef.value)
+  const minTemp = Math.min(...data) - 2
+  const maxTemp = Math.max(...data) + 2
+  tempChart.setOption({
+    tooltip: {
+      trigger: 'axis',
+      formatter: function (params) {
+        const p = params[0]
+        return '<b>' + p.name + '</b><br/>Temperature: <b>' + p.value + '°C</b>'
+      },
+    },
+    grid: { left: 50, right: 20, top: 20, bottom: 40 },
+    xAxis: {
+      type: 'category', data: labels,
+      axisLabel: { color: '#6b7280', fontSize: 11 },
+      axisLine: { lineStyle: { color: '#e5e7eb' } },
+    },
+    yAxis: {
+      type: 'value', name: '°C',
+      nameTextStyle: { color: '#6b7280', fontSize: 11 },
+      min: Math.floor(minTemp), max: Math.ceil(maxTemp),
+      splitLine: { lineStyle: { color: '#f3f4f6' } },
+      axisLabel: { color: '#6b7280', fontSize: 11, formatter: '{value}°' },
+    },
+    series: [{
+      name: 'Temperature', type: 'line', data, smooth: true, symbol: 'none',
+      lineStyle: { color: '#3b82f6', width: 2.5 },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: 'rgba(59,130,246,0.30)' },
+          { offset: 1, color: 'rgba(59,130,246,0.02)' },
+        ]),
+      },
+    }],
+  })
+}
+
+// This function resizes both charts when the browser window size changes
+function onResize() {
+  if (uvChart) uvChart.resize()
+  if (tempChart) tempChart.resize()
+}
+
 onMounted(() => {
   requestLocation()
+  window.addEventListener('resize', onResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', onResize)
+  if (uvChart) uvChart.dispose()
+  if (tempChart) tempChart.dispose()
 })
 </script>
 
@@ -316,6 +459,51 @@ onMounted(() => {
             UV levels are currently low — no special precautions needed for short outdoor activities.
           </div>
         </div>
+      </div>
+
+      <!-- Location and date info bar above the charts -->
+      <div class="flex flex-wrap items-center justify-between gap-2 bg-white shadow-sm border border-gray-100 px-5 py-3">
+        <div class="flex items-center gap-2 text-gray-700">
+          <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span class="font-medium text-sm">{{ locationName }}</span>
+        </div>
+        <span class="text-gray-400 text-xs">{{ todayLabel }}</span>
+      </div>
+
+      <!-- Hourly UV index chart -->
+      <div class="bg-white shadow-sm border border-gray-100 p-6">
+        <div class="mb-4">
+          <h2 class="text-base font-semibold text-gray-900 flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-orange-500 inline-block"></span>
+            UV Index — Today
+          </h2>
+          <p class="text-xs text-gray-400 mt-0.5">Hourly UV Index values throughout the day</p>
+        </div>
+        <!-- Color legend for the UV risk bands on the chart -->
+        <div class="flex flex-wrap gap-3 mb-4">
+          <span v-for="band in uvBands" :key="band.label" class="flex items-center gap-1.5 text-xs text-gray-500">
+            <span :class="['w-2.5 h-2.5 rounded-full', band.color]" />
+            {{ band.label }}
+          </span>
+        </div>
+        <div ref="uvChartRef" class="w-full" style="height: 280px;" />
+      </div>
+
+      <!-- Hourly temperature chart -->
+      <div class="bg-white shadow-sm border border-gray-100 p-6">
+        <div class="mb-4">
+          <h2 class="text-base font-semibold text-gray-900 flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>
+            Temperature — Today
+          </h2>
+          <p class="text-xs text-gray-400 mt-0.5">Hourly temperature in °C throughout the day</p>
+        </div>
+        <div ref="tempChartRef" class="w-full" style="height: 280px;" />
       </div>
     </div>
 
