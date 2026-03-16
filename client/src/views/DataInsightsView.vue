@@ -1,5 +1,6 @@
 <script setup>
 import MelanomaChart from '@/components/MelanomaChart.vue'
+import UVHeatTrendChart from '@/components/UVHeatTrendChart.vue'
 </script>
 
 <template>
@@ -12,8 +13,9 @@ import MelanomaChart from '@/components/MelanomaChart.vue'
       </p>
     </div>
 
-    <div class="max-w-4xl mx-auto px-4 pb-12">
+    <div class="max-w-4xl mx-auto px-4 pb-12 space-y-6">
       <MelanomaChart />
+      <UVHeatTrendChart />
     </div>
 
   </div>
