@@ -122,8 +122,7 @@ async function startReminder() {
   }
 
   // This block calculates when the first reminder will fire and stores it for display
-  const next = new Date()
-  next.setMilliseconds(next.getMilliseconds() + delay + intervalMinutes.value * 60 * 1000)
+  const next = new Date(Date.now() + delay + intervalMinutes.value * 60 * 1000)
   nextReminderTime.value = next
 
   setTimeout(() => {
