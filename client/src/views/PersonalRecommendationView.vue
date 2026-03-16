@@ -415,7 +415,7 @@ onMounted(() => {
         <h2 class="text-base font-semibold text-gray-900 px-1">Your Recommendations</h2>
 
         <!-- Two-column card row showing safe exposure time and UV risk level -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <!-- Card showing the maximum safe outdoor exposure time -->
           <div class="bg-sky-500 text-white p-6 shadow">
             <p class="text-xs font-medium text-sky-100 uppercase tracking-wide">Max Safe Exposure Time</p>
@@ -426,8 +426,16 @@ onMounted(() => {
               Without protection · {{ selectedTone.name }} skin · {{ selectedPref.label }}
             </p>
           </div>
+          <!-- Card showing the recommended SPF for the selected skin tone and UV level -->
+          <div class="bg-amber-500 text-white p-6 shadow">
+            <p class="text-xs font-medium text-amber-100 uppercase tracking-wide">Recommended SPF</p>
+            <p class="text-6xl font-black mt-2">{{ selectedTone.minSPF[uvLevelKey] }}</p>
+            <p class="text-xs text-amber-100 mt-2">
+              Minimum SPF · {{ selectedTone.name }} skin · {{ uvLevelLabel }} UV
+            </p>
+          </div>
           <!-- Card showing the current UV index and risk level -->
-          <div :class="['rounded-2xl p-6 shadow flex flex-col justify-between', getUVCardBg(uvLevelKey)]">
+          <div :class="['p-6 shadow flex flex-col justify-between', getUVCardBg(uvLevelKey)]">
             <div>
               <p class="text-xs font-medium text-white/80 uppercase tracking-wide">UV Risk Today</p>
               <p class="text-6xl font-black text-white mt-2">{{ uvIndex }}</p>
