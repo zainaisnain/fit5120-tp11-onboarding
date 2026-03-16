@@ -23,25 +23,7 @@ import UVHeatTrendChart from '@/components/UVHeatTrendChart.vue'
           <p class="text-sm text-gray-600 leading-relaxed">
             Australia has one of the highest rates of melanoma in the world<sup class="text-orange-500 font-medium">[1]</sup>, a direct consequence of its high UV environment and outdoor culture.
             Among young Australians aged 15 to 29, melanoma remains a significant concern, with incidence rates rising across the decades since records began in 1982.<sup class="text-orange-500 font-medium">[2]</sup>
-            Sun exposure accumulated during childhood and early adulthood is a key driver of lifetime melanoma risk.
-            <span class="font-medium text-gray-700">Males in this age group consistently show higher rates than females across both incidence and mortality.</span><sup class="text-orange-500 font-medium">[2]</sup>
           </p>
-        </div>
-
-        <!-- Key stat callouts -->
-        <div class="grid grid-cols-3 gap-3 mb-5">
-          <div class="bg-orange-50 border border-orange-100 rounded p-4 text-center">
-            <p class="text-2xl font-bold text-orange-500">2×</p>
-            <p class="text-xs text-gray-500 mt-1">Males diagnosed at nearly twice the rate of females at peak years<sup class="text-orange-500">[2]</sup></p>
-          </div>
-          <div class="bg-indigo-50 border border-indigo-100 rounded p-4 text-center">
-            <p class="text-2xl font-bold text-indigo-500">4th</p>
-            <p class="text-xs text-gray-500 mt-1">Most common cancer in Australia by total incidence count<sup class="text-orange-500">[2]</sup></p>
-          </div>
-          <div class="bg-green-50 border border-green-100 rounded p-4 text-center">
-            <p class="text-2xl font-bold text-green-600">↑ Rising</p>
-            <p class="text-xs text-gray-500 mt-1">Incidence has trended upward for over 35 years<sup class="text-orange-500">[2]</sup></p>
-          </div>
         </div>
 
         <MelanomaChart />
@@ -57,8 +39,7 @@ import UVHeatTrendChart from '@/components/UVHeatTrendChart.vue'
       <!-- Connector narrative -->
       <div class="border-l-4 border-orange-300 pl-4 py-1">
         <p class="text-sm text-gray-600 leading-relaxed italic">
-          "So what's driving this rise? The answer lies in how much UV radiation Australians are exposed to
-          and how that exposure has changed over the decades."
+          "So what's driving this rise? The answer lies in how much UV radiation Australians are exposed to."
         </p>
       </div>
 
@@ -72,24 +53,7 @@ import UVHeatTrendChart from '@/components/UVHeatTrendChart.vue'
             <span class="font-medium text-gray-700">Extreme levels (UV 11+)</span> during peak summer.<sup class="text-orange-500 font-medium">[3]</sup>
             UV at these levels can cause sunburn in as little as 10 minutes for fair-skinned individuals,<sup class="text-orange-500 font-medium">[4]</sup>
             and repeated exposure is the leading preventable cause of melanoma.<sup class="text-orange-500 font-medium">[1]</sup> Average UV levels has also shown no significant decline, indicating that the overall UV environment has not improved.
-            The data shows there is no "safe" summer in Melbourne.
           </p>
-        </div>
-
-        <!-- Key stat callouts -->
-        <div class="grid grid-cols-3 gap-3 mb-5">
-          <div class="bg-yellow-50 border border-yellow-100 rounded p-4 text-center">
-            <p class="text-2xl font-bold text-yellow-500">11+</p>
-            <p class="text-xs text-gray-500 mt-1">Peak UV regularly reaches Extreme levels in Melbourne summers<sup class="text-orange-500">[3]</sup></p>
-          </div>
-          <div class="bg-red-50 border border-red-100 rounded p-4 text-center">
-            <p class="text-2xl font-bold text-red-500">10 min</p>
-            <p class="text-xs text-gray-500 mt-1">Time to sunburn at UV 11+ for fair skin without protection<sup class="text-orange-500">[4]</sup></p>
-          </div>
-          <div class="bg-orange-50 border border-orange-100 rounded p-4 text-center">
-            <p class="text-2xl font-bold text-orange-500">18 yrs</p>
-            <p class="text-xs text-gray-500 mt-1">Of continuous high UV summers captured in this dataset<sup class="text-orange-500">[3]</sup></p>
-          </div>
         </div>
 
         <UVHeatTrendChart />
