@@ -10,7 +10,6 @@ const navItems = [
   { label: 'Personal Recommendation', to: '/personal-recommendation' },
   { label: 'Data Insights',           to: '/data-insights' },
   { label: 'Effects Of Sun Exposure', to: '/effects-of-sun-exposure' },
-  { label: 'Sunscreen Calculator',    to: '/sunscreen-calculator' },
 ]
 
 function isActive(path) {

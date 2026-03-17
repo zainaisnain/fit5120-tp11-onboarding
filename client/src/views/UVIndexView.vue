@@ -98,6 +98,23 @@ const isDangerous = computed(() => {
   return uvIndex.value >= 6
 })
 
+// This array defines the recommended sunscreen amount in teaspoons for each body area
+const bodyParts = [
+  { name: 'Face, Neck & Ears', amount: 1 },
+  { name: 'Left Arm',          amount: 0.5 },
+  { name: 'Right Arm',         amount: 0.5 },
+  { name: 'Front Body',        amount: 1 },
+  { name: 'Back Body',         amount: 1 },
+  { name: 'Left Leg',          amount: 1.5 },
+  { name: 'Right Leg',         amount: 1.5 },
+]
+
+// This computed property returns true when the UV index exceeds 3 and sunscreen is recommended
+const needsSunscreen = computed(() => {
+  if (uvIndex.value === null) return false
+  return uvIndex.value > 3
+})
+
 // This array defines the segments of the UV risk scale color bar
 const scaleSegments = [
   { label: '0–2', color: 'bg-green-500', level: 'Low' },
@@ -438,42 +455,166 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Recommended protective actions grid -->
-      <div class="bg-white shadow-sm border border-gray-100 p-6">
-        <h2 class="text-base font-semibold text-gray-800 mb-4">Recommended Actions</h2>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <!-- Action items shown when UV index is 3 or above -->
-          <div
-            v-for="action in actions"
-            :key="action.label"
-            class="flex flex-col items-center gap-2 bg-gray-50 p-3"
-          >
-            <span class="text-2xl">{{ action.icon }}</span>
-            <span class="text-xs text-gray-600 text-center font-medium">{{ action.label }}</span>
-          </div>
-          <!-- Message shown when UV index is below 3 -->
-          <div
-            v-if="uvIndex < 3"
-            class="col-span-2 sm:col-span-4 text-center text-gray-400 text-sm py-2"
-          >
-            UV levels are currently low — no special precautions needed for short outdoor activities.
-          </div>
-        </div>
-      </div>
+      <!-- ── Sun Protection & Sunscreen Guide ── -->
+      <div class="bg-white shadow-sm border border-orange-100">
 
-      <!-- Location and date info bar above the charts -->
-      <div class="flex flex-wrap items-center justify-between gap-2 bg-white shadow-sm border border-gray-100 px-5 py-3">
-        <div class="flex items-center gap-2 text-gray-700">
-          <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <span class="font-medium text-sm">{{ locationName }}</span>
+        <!-- Section header -->
+        <div class="flex items-center gap-3 px-6 py-4 border-b border-orange-100 bg-orange-50">
+          <span class="text-xl">🧴</span>
+          <div>
+            <h2 class="text-base font-bold text-gray-900">Sun Protection & Sunscreen Guide</h2>
+            <p class="text-xs text-gray-500 mt-0.5">Personalised recommendations based on your current UV level</p>
+          </div>
         </div>
-        <span class="text-gray-400 text-xs">{{ todayLabel }}</span>
+
+        <div class="p-6 space-y-6">
+
+          <!-- Recommended protective actions -->
+          <div>
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">Recommended Actions</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div
+                v-for="action in actions"
+                :key="action.label"
+                class="flex flex-col items-center gap-2 bg-orange-50 border border-orange-100 p-3"
+              >
+                <span class="text-2xl">{{ action.icon }}</span>
+                <span class="text-xs text-gray-600 text-center font-medium">{{ action.label }}</span>
+              </div>
+              <div
+                v-if="uvIndex < 3"
+                class="col-span-2 sm:col-span-4 flex items-center gap-2 bg-green-50 border border-green-100 px-4 py-3 text-sm text-green-700"
+              >
+                <span class="text-base">✅</span>
+                UV levels are currently low — no special precautions needed for short outdoor activities.
+              </div>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <hr class="border-gray-100" />
+
+          <!-- HIGH UV: sunscreen amount + body parts + tips -->
+          <template v-if="needsSunscreen">
+
+            <!-- Recommended amount banner -->
+            <div class="bg-orange-500 text-white p-5 flex items-center gap-6">
+              <div class="text-center shrink-0">
+                <p class="text-6xl font-black leading-none">7</p>
+                <p class="text-sm font-semibold mt-1">teaspoons</p>
+                <p class="text-orange-200 text-xs">≈ 35 ml</p>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-orange-100 mb-1">Recommended Amount — Full Body</p>
+                <p class="text-xs text-orange-200 leading-relaxed">
+                  Apply 20 minutes before going outdoors. Reapply every 2 hours, or every 40–80 minutes if swimming or sweating.
+                </p>
+              </div>
+            </div>
+
+            <!-- Body area breakdown + application tips side by side on larger screens -->
+            <div class="grid sm:grid-cols-2 gap-6">
+
+              <!-- Amount by body area -->
+              <div>
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">Amount by Body Area</h3>
+                <div class="space-y-1">
+                  <div
+                    v-for="part in bodyParts"
+                    :key="part.name"
+                    class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"
+                  >
+                    <span class="text-sm text-gray-700">{{ part.name }}</span>
+                    <span class="text-sm font-semibold text-orange-500">{{ part.amount }} tsp</span>
+                  </div>
+                </div>
+                <p class="text-xs text-gray-400 mt-3">1 tsp ≈ 5 ml · for adults of average body size</p>
+              </div>
+
+              <!-- Application tips -->
+              <div>
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">Application Tips</h3>
+                <div class="space-y-3">
+                  <div class="flex items-start gap-3">
+                    <span class="text-base shrink-0">⏱️</span>
+                    <p class="text-sm text-gray-600">Apply <strong>20 minutes before</strong> going outdoors.</p>
+                  </div>
+                  <div class="flex items-start gap-3">
+                    <span class="text-base shrink-0">🔄</span>
+                    <p class="text-sm text-gray-600">Reapply every <strong>2 hours</strong>, or <strong>40–80 min</strong> if swimming or sweating.</p>
+                  </div>
+                  <div class="flex items-start gap-3">
+                    <span class="text-base shrink-0">🧴</span>
+                    <p class="text-sm text-gray-600">Use <strong>SPF 30+</strong>. SPF 50+ when UV Index is 6 or above.</p>
+                  </div>
+                  <div class="flex items-start gap-3">
+                    <span class="text-base shrink-0">👀</span>
+                    <p class="text-sm text-gray-600">Don't miss: <strong>ears, back of neck, tops of feet</strong>, and back of hands.</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </template>
+
+          <!-- LOW UV: still-consider + good habits -->
+          <template v-else-if="uvIndex !== null">
+
+            <div class="grid sm:grid-cols-2 gap-6">
+
+              <!-- Still consider sunscreen if... -->
+              <div>
+                <h3 class="text-sm font-semibold text-gray-700 mb-1">Still Consider Sunscreen If…</h3>
+                <p class="text-xs text-gray-400 mb-3">Some situations increase exposure risk even at low UV:</p>
+                <div class="space-y-2">
+                  <div class="flex items-start gap-3 bg-gray-50 px-3 py-2.5">
+                    <span class="text-lg shrink-0">👷</span>
+                    <div>
+                      <p class="text-sm font-semibold text-gray-800">Outdoor work</p>
+                      <p class="text-xs text-gray-500">Hours outside let cumulative UV exposure add up.</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-3 bg-gray-50 px-3 py-2.5">
+                    <span class="text-lg shrink-0">🚵</span>
+                    <div>
+                      <p class="text-sm font-semibold text-gray-800">Extended outdoor activities</p>
+                      <p class="text-xs text-gray-500">Hiking or sports sessions over 2 hours warrant protection.</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-3 bg-gray-50 px-3 py-2.5">
+                    <span class="text-lg shrink-0">❄️</span>
+                    <div>
+                      <p class="text-sm font-semibold text-gray-800">Reflective surfaces nearby</p>
+                      <p class="text-xs text-gray-500">Snow, sand, and water reflect up to 80% of UV rays.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Good habits -->
+              <div>
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">Good Habits at Any UV Level</h3>
+                <div class="space-y-2.5">
+                  <div class="flex items-center gap-3 text-sm text-gray-600">
+                    <span>👒</span><span>Wear a hat for extended outdoor periods</span>
+                  </div>
+                  <div class="flex items-center gap-3 text-sm text-gray-600">
+                    <span>🕶️</span><span>Sunglasses protect your eyes even on cloudy days</span>
+                  </div>
+                  <div class="flex items-center gap-3 text-sm text-gray-600">
+                    <span>🌡️</span><span>UV can rise quickly — check before long outdoor trips</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </template>
+
+        </div>
       </div>
+      <!-- ── End Sun Protection & Sunscreen Guide ── -->
 
       <!-- Hourly UV index chart -->
       <div class="bg-white shadow-sm border border-gray-100 p-6">
@@ -504,6 +645,20 @@ onUnmounted(() => {
           <p class="text-xs text-gray-400 mt-0.5">Hourly temperature in °C throughout the day</p>
         </div>
         <div ref="tempChartRef" class="w-full" style="height: 280px;" />
+      </div>
+
+      <!-- Location and date info bar -->
+      <div class="flex flex-wrap items-center justify-between gap-2 bg-white shadow-sm border border-gray-100 px-5 py-3">
+        <div class="flex items-center gap-2 text-gray-700">
+          <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span class="font-medium text-sm">{{ locationName }}</span>
+        </div>
+        <span class="text-gray-400 text-xs">{{ todayLabel }}</span>
       </div>
     </div>
 

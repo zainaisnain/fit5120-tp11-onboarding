@@ -45,11 +45,6 @@ const routes = [
         name: 'EffectsOfSunExposure',
         component: () => import('@/views/EffectsOfSunExposureView.vue'),
       },
-      {
-        path: 'sunscreen-calculator',
-        name: 'SunscreenCalculator',
-        component: () => import('@/views/SunscreenCalculatorView.vue'),
-      },
     ],
   },
   {

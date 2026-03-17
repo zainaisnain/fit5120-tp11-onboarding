@@ -6,7 +6,6 @@ import { useRouter } from 'vue-router'
 const authStore = useAuthStore()
 const router = useRouter()
 
-const showLangMenu = ref(false)
 const showProfileMenu = ref(false)
 
 // This computed property returns the first letter of the user name as an uppercase avatar initial
@@ -27,13 +26,6 @@ const userUsername = computed(() => {
   return ''
 })
 
-const languages = ['English', 'Chinese', 'Vietnamese', 'Arabic']
-const selectedLang = ref('English')
-
-function selectLang(lang) {
-  selectedLang.value = lang
-  showLangMenu.value = false
-}
 
 function handleLogout() {
   authStore.logout()
@@ -64,50 +56,8 @@ function handleLogout() {
         </span>
       </RouterLink>
 
-      <!-- Center: Search -->
-      <div class="flex-1 max-w-xs hidden md:block">
-        <div class="relative">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Search"
-            class="w-full pl-9 pr-4 py-1.5 text-sm bg-gray-100 border border-transparent focus:outline-none focus:bg-white focus:border-gray-300 transition"
-          />
-        </div>
-      </div>
-
-      <!-- Right: Language + Location + Profile -->
+      <!-- Right: Location + Profile -->
       <div class="flex items-center gap-4 text-sm text-gray-600">
-
-        <!-- Language selector -->
-        <div class="relative hidden sm:block">
-          <button
-            class="flex items-center gap-1.5 hover:text-gray-900 transition"
-            @click="showLangMenu = !showLangMenu"
-          >
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/>
-            </svg>
-            <span>Language - {{ selectedLang }}</span>
-            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
-            </svg>
-          </button>
-          <!-- Language dropdown -->
-          <div v-if="showLangMenu" class="absolute right-0 mt-2 w-36 bg-white shadow-lg border border-gray-100 py-1 z-50">
-              <button
-                v-for="lang in languages"
-                :key="lang"
-                class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition"
-                :class="lang === selectedLang ? 'text-orange-500 font-medium' : 'text-gray-700'"
-                @click="selectLang(lang)"
-              >
-                {{ lang }}
-              </button>
-            </div>
-        </div>
 
         <!-- Location -->
         <div class="hidden sm:flex items-center gap-1 text-gray-600">
@@ -145,9 +95,9 @@ function handleLogout() {
 
     <!-- Click outside to close dropdowns -->
     <div
-      v-if="showLangMenu || showProfileMenu"
+      v-if="showProfileMenu"
       class="fixed inset-0 z-40"
-      @click="showLangMenu = false; showProfileMenu = false"
+      @click="showProfileMenu = false"
     />
   </header>
 </template>
