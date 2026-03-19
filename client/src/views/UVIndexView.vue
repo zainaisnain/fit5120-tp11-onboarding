@@ -12,6 +12,12 @@ const uvIndex = ref(null)
 const updatedAt = ref('')
 const todayLabel = ref('')
 
+// Suburb search state
+const suburbQuery = ref('')
+const suburbSuggestions = ref([])
+const showSuggestions = ref(false)
+const searchLoading = ref(false)
+
 // This array defines the color legend entries for the UV index chart
 const uvBands = [
   { label: 'Low (0–2)', color: 'bg-green-500' },
@@ -124,8 +130,83 @@ const scaleSegments = [
   { label: '11+', color: 'bg-purple-600', level: 'Extreme' },
 ]
 
+// Debounced suburb autocomplete using Nominatim restricted to Melbourne
+let searchTimeout = null
+async function onSuburbInput() {
+  const q = suburbQuery.value.trim()
+  if (q.length < 2) {
+    suburbSuggestions.value = []
+    showSuggestions.value = false
+    return
+  }
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(async () => {
+    searchLoading.value = true
+    try {
+      const res = await axios.get('https://nominatim.openstreetmap.org/search', {
+        params: { q: q + ', Victoria, Australia', format: 'json', limit: 10, addressdetails: 1, countrycodes: 'au' },
+        headers: { 'Accept-Language': 'en' },
+      })
+      suburbSuggestions.value = res.data.map(item => {
+          const addr = item.address || {}
+          const name = addr.suburb || addr.neighbourhood || addr.town || addr.village || addr.city_district || addr.city || item.display_name.split(',')[0]
+          return { name, lat: parseFloat(item.lat), lng: parseFloat(item.lon) }
+        }).filter((item, index, arr) =>
+          item.name.toLowerCase().startsWith(q.toLowerCase()) &&
+          arr.findIndex(x => x.name.toLowerCase() === item.name.toLowerCase()) === index
+        )
+      showSuggestions.value = suburbSuggestions.value.length > 0
+    } catch {
+      suburbSuggestions.value = []
+    } finally {
+      searchLoading.value = false
+    }
+  }, 300)
+}
+
+// Selects a suburb suggestion and fetches UV data for it
+function selectSuburb(s) {
+  suburbQuery.value = s.name
+  showSuggestions.value = false
+  suburbSuggestions.value = []
+  locationName.value = s.name
+  coords.value = { lat: s.lat, lng: s.lng }
+  fetchUVData()
+}
+
+// Handles search form submission for a typed suburb name
+async function searchSuburb() {
+  const q = suburbQuery.value.trim()
+  if (!q) return
+  showSuggestions.value = false
+  searchLoading.value = true
+  try {
+    const res = await axios.get('https://nominatim.openstreetmap.org/search', {
+      params: { q: q + ', Melbourne, Victoria, Australia', format: 'json', limit: 1, addressdetails: 1 },
+      headers: { 'Accept-Language': 'en' },
+    })
+    if (!res.data.length) {
+      errorMessage.value = `Could not find "${q}" in Melbourne. Try a different suburb name.`
+      pageState.value = 'error'
+      return
+    }
+    const item = res.data[0]
+    const addr = item.address || {}
+    locationName.value = addr.suburb || addr.neighbourhood || addr.town || addr.village || addr.city_district || q
+    coords.value = { lat: parseFloat(item.lat), lng: parseFloat(item.lon) }
+    fetchUVData()
+  } catch {
+    errorMessage.value = 'Suburb search failed. Please check your connection and try again.'
+    pageState.value = 'error'
+  } finally {
+    searchLoading.value = false
+  }
+}
+
 // This function requests geolocation permission from the browser and starts the loading process
 async function requestLocation() {
+  suburbQuery.value = ''
+  showSuggestions.value = false
   pageState.value = 'locating'
   errorMessage.value = ''
 
@@ -138,6 +219,7 @@ async function requestLocation() {
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
       coords.value = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+      locationName.value = ''
       await fetchUVData()
     },
     (err) => {
@@ -177,20 +259,10 @@ async function fetchUVData() {
 
     uvIndex.value = Math.round(uvRes.data.current.uv_index * 10) / 10
 
-    // This block extracts the most specific available place name from the geocoding response
-    const addr = geoRes.data.address
-    if (addr.city) {
-      locationName.value = addr.city
-    } else if (addr.town) {
-      locationName.value = addr.town
-    } else if (addr.suburb) {
-      locationName.value = addr.suburb
-    } else if (addr.county) {
-      locationName.value = addr.county
-    } else if (addr.state) {
-      locationName.value = addr.state
-    } else {
-      locationName.value = 'Unknown Location'
+    // Use searched suburb name if available, otherwise resolve from reverse geocode (most specific first)
+    if (!locationName.value) {
+      const addr = geoRes.data.address
+      locationName.value = addr.suburb || addr.neighbourhood || addr.town || addr.village || addr.city_district || addr.city || addr.county || addr.state || 'Unknown Location'
     }
 
     updatedAt.value = new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })
@@ -387,26 +459,82 @@ onUnmounted(() => {
 
       <!-- Main UV index card with gradient background -->
       <div :class="['rounded-2xl p-8 text-white shadow-lg bg-gradient-to-br', uvConfig.gradient]">
-        <!-- Location name and refresh button row -->
-        <div class="flex items-center justify-between mb-6">
-          <div class="flex items-center gap-2">
-            <svg class="w-5 h-5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-            </svg>
-            <span class="text-lg font-semibold">{{ locationName }}</span>
+        <!-- Location name, suburb search, and refresh button row -->
+        <div class="flex flex-col gap-3 mb-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              <span class="text-lg font-semibold">{{ locationName }}</span>
+            </div>
+            <button
+              class="text-white/70 hover:text-white transition flex items-center gap-1 text-xs"
+              @click="fetchUVData"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+              Refresh
+            </button>
           </div>
-          <button
-            class="text-white/70 hover:text-white transition flex items-center gap-1 text-xs"
-            @click="fetchUVData"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>
-            Refresh
-          </button>
+
+          <!-- Suburb search input row -->
+          <div class="relative">
+            <form class="flex gap-2" @submit.prevent="searchSuburb">
+              <div class="relative flex-1">
+                <input
+                  v-model="suburbQuery"
+                  type="text"
+                  placeholder="Search Melbourne suburb…"
+                  class="w-full bg-white/20 placeholder-white/60 text-white text-sm rounded px-3 py-1.5 pr-8 focus:outline-none focus:ring-2 focus:ring-white/50"
+                  @input="onSuburbInput"
+                  @blur="() => setTimeout(() => { showSuggestions = false }, 150)"
+                  @focus="showSuggestions = suburbSuggestions.length > 0"
+                />
+                <span v-if="searchLoading" class="absolute right-2 top-1/2 -translate-y-1/2">
+                  <svg class="w-3.5 h-3.5 text-white/70 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                  </svg>
+                </span>
+              </div>
+              <button type="submit" class="bg-white/20 hover:bg-white/30 text-white text-xs font-medium px-3 py-1.5 rounded transition">
+                Search
+              </button>
+              <button
+                type="button"
+                class="bg-white/20 hover:bg-white/30 text-white text-xs font-medium px-3 py-1.5 rounded transition flex items-center gap-1.5 shrink-0"
+                title="Use my current location"
+                @click="requestLocation"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                My Location
+              </button>
+            </form>
+
+            <!-- Autocomplete suggestions -->
+            <ul
+              v-if="showSuggestions && suburbSuggestions.length"
+              class="absolute z-10 left-0 right-16 mt-1 bg-white rounded shadow-lg overflow-hidden"
+            >
+              <li
+                v-for="s in suburbSuggestions"
+                :key="s.name + s.lat"
+                class="px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 cursor-pointer"
+                @mousedown.prevent="selectSuburb(s)"
+              >
+                {{ s.name }}
+              </li>
+            </ul>
+          </div>
         </div>
 
         <!-- UV index number and risk level label -->
