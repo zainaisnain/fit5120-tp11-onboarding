@@ -121,6 +121,66 @@ const needsSunscreen = computed(() => {
   return uvIndex.value > 3
 })
 
+// Maps UV level key to clothing recommendations
+const CLOTHING_BY_UV = {
+  low: {
+    summary: 'Regular casual clothing',
+    items: [
+      { icon: '👕', label: 'T-shirt or light top', detail: 'Any fabric is fine for short outdoor time' },
+      { icon: '👟', label: 'Comfortable footwear', detail: 'Open shoes or trainers are suitable' },
+    ],
+  },
+  moderate: {
+    summary: 'Light sun-protective clothing',
+    items: [
+      { icon: '👕', label: 'Light long-sleeve top', detail: 'Loose, light-coloured fabric to reflect heat' },
+      { icon: '👒', label: 'Wide-brim hat', detail: 'Protect face, neck and ears' },
+      { icon: '🕶️', label: 'Sunglasses (UV400)', detail: 'Shield eyes from UV radiation' },
+    ],
+  },
+  high: {
+    summary: 'UV-protective clothing recommended',
+    items: [
+      { icon: '👕', label: 'Long-sleeve UV shirt (UPF 30+)', detail: 'Tightly woven fabric blocks UV effectively' },
+      { icon: '👖', label: 'Long trousers or skirt', detail: 'Cover legs to reduce UV exposure' },
+      { icon: '👒', label: 'Wide-brim hat (≥ 7.5 cm brim)', detail: 'Essential for face and neck coverage' },
+      { icon: '🕶️', label: 'Wrap-around sunglasses', detail: 'Full UV400 protection, wraparound style preferred' },
+    ],
+  },
+  veryHigh: {
+    summary: 'Full UV protection required',
+    items: [
+      { icon: '👕', label: 'Long-sleeve UPF 50+ shirt', detail: 'Choose dark or bright colours for better UV blocking' },
+      { icon: '👖', label: 'Long trousers / UV leggings', detail: 'Cover all limbs; lightweight breathable fabric' },
+      { icon: '👒', label: 'Full-brim hat', detail: 'Neck flap provides extra protection' },
+      { icon: '🕶️', label: 'Wrap-around sunglasses (UV400)', detail: 'Side shields recommended' },
+      { icon: '🧤', label: 'UV-protective gloves (optional)', detail: 'For extended outdoor work or activities' },
+    ],
+  },
+  extreme: {
+    summary: 'Stay indoors — full coverage if outside',
+    items: [
+      { icon: '🏠', label: 'Stay indoors if possible', detail: 'Extreme UV — outdoor activity is not recommended' },
+      { icon: '👕', label: 'Full-coverage UPF 50+ clothing', detail: 'Cover every exposed area of skin' },
+      { icon: '🎩', label: 'Legionnaire hat with neck flap', detail: 'Maximum coverage for head, face and neck' },
+      { icon: '🕶️', label: 'Wrap-around UV400 sunglasses', detail: 'Full eye protection essential' },
+      { icon: '☂️', label: 'UV-protective umbrella', detail: 'Additional overhead shielding when walking outdoors' },
+    ],
+  },
+}
+
+const uvLevelKey = computed(() => {
+  const uv = uvIndex.value
+  if (uv === null) return 'low'
+  if (uv <= 2) return 'low'
+  if (uv <= 5) return 'moderate'
+  if (uv <= 7) return 'high'
+  if (uv <= 10) return 'veryHigh'
+  return 'extreme'
+})
+
+const clothing = computed(() => CLOTHING_BY_UV[uvLevelKey.value])
+
 // This array defines the segments of the UV risk scale color bar
 const scaleSegments = [
   { label: '0–2', color: 'bg-green-500', level: 'Low' },
@@ -743,6 +803,30 @@ onUnmounted(() => {
         </div>
       </div>
       <!-- ── End Sun Protection & Sunscreen Guide ── -->
+
+      <!-- Recommended Clothing section -->
+      <div class="bg-white shadow-sm border border-gray-100">
+        <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <span class="text-xl">👗</span>
+          <div>
+            <h2 class="text-base font-bold text-gray-900">Recommended Clothing</h2>
+            <p class="text-xs text-gray-500 mt-0.5">{{ clothing.summary }}</p>
+          </div>
+        </div>
+        <div class="p-6 space-y-3">
+          <div
+            v-for="item in clothing.items"
+            :key="item.label"
+            class="flex items-start gap-3 bg-gray-50 px-4 py-3"
+          >
+            <span class="text-2xl leading-none shrink-0">{{ item.icon }}</span>
+            <div>
+              <p class="text-sm font-semibold text-gray-800">{{ item.label }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ item.detail }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Hourly UV index chart -->
       <div class="bg-white shadow-sm border border-gray-100 p-6">
